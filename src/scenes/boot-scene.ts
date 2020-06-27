@@ -58,7 +58,7 @@ export class BootScene extends Phaser.Scene {
       progressBar.destroy();
       progressBarContainer.destroy();
 
-      this.scene.start('MainMenu');
+      this.scene.start('Game');
     });
 
     this.loadAssets();
@@ -74,5 +74,6 @@ export class BootScene extends Phaser.Scene {
 
     // Source: Open Game Art
     this.load.image('man', 'assets/sprites/character.png');
+    this.load.image('turt', 'assets/sprites/turt.png');
   }
 }
