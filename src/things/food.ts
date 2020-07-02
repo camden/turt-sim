@@ -12,7 +12,9 @@ export const createFood = (scene: Phaser.Scene): Food => {
   const x = Phaser.Math.Between(1, 1000);
   const y = Phaser.Math.Between(1, 1000);
   const sprite = scene.physics.add.sprite(x, y, 'food');
-  sprite.setBounce(1, 1);
+  sprite.setBounce(0.2, 0.2);
+  sprite.setDamping(true);
+  sprite.setDrag(0.95);
   sprite.setCollideWorldBounds(true);
   sprite.setName(name);
 

@@ -10,7 +10,7 @@ export interface Turtle extends Thing {
   maxSpeed: number;
   target: TurtleTarget | null;
   phase: 'IDLE' | 'HUNTING';
-  targetGraphic: Transformable;
+  targetGraphic: Transformable & Visible;
   ui: TurtleLocalUIPart[];
 }
 
@@ -20,6 +20,7 @@ interface LocalUIPart<BaseType, ObjectType> {
 }
 
 type Transformable = Phaser.GameObjects.Components.Transform;
+type Visible = Phaser.GameObjects.Components.Visible;
 type TurtleLocalUIPart = LocalUIPart<Turtle, Transformable>;
 
 type TurtleTarget = Phaser.GameObjects.GameObject & Transformable;
@@ -29,10 +30,13 @@ export const createTurtle = (scene: Phaser.Scene): Turtle => {
   const x = Phaser.Math.Between(1, 1000);
   const y = Phaser.Math.Between(1, 1000);
   const sprite = scene.physics.add.sprite(x, y, 'turt');
-  sprite.setBounce(1, 1);
+  sprite.setBounce(0.2, 0.2);
   sprite.setCollideWorldBounds(true);
-  sprite.setDrag(200);
   sprite.setName(name);
+  const speed = 70;
+  const maxSpeed = 70;
+  sprite.setDamping(true);
+  sprite.setDrag(0.95);
 
   const targetSize = 50;
   const targetGraphic = scene.add.ellipse(200, 200, targetSize, targetSize);
@@ -60,8 +64,8 @@ export const createTurtle = (scene: Phaser.Scene): Turtle => {
     target: null,
     sprite,
     targetGraphic,
-    speed: Phaser.Math.Between(20, 150),
-    maxSpeed: Phaser.Math.Between(100, 150),
+    speed,
+    maxSpeed,
     phase: 'HUNTING',
     ui,
   };
@@ -75,17 +79,18 @@ export const updateTurtle = (
 ): void => {
   const body = turt.sprite.body as Phaser.Physics.Arcade.Body;
 
-  if (!turt.target) {
-    turt.target = foods[0] ? foods[0].sprite : null;
-  }
+  turt.target = foods[0] ? foods[0].sprite : null;
 
-  if (turt.phase === 'HUNTING') {
-    scene.physics.accelerateToObject(turt.sprite, turt.target, turt.speed, turt.maxSpeed);
+  if (turt.phase === 'HUNTING' && !!turt.target) {
+    turt.targetGraphic.setVisible(true);
+    turt.targetGraphic.setPosition(turt.target.x, turt.target.y);
+    // scene.physics.accelerateToObject(turt.sprite, turt.target, turt.speed, turt.maxSpeed, turt.maxSpeed);
+    scene.physics.moveToObject(turt.sprite, turt.target, turt.speed);
   } else {
-    scene.physics.accelerateToObject(turt.sprite, null, turt.speed, turt.maxSpeed);
+    turt.targetGraphic.setVisible(false);
+    body.setAcceleration(0, 0);
+    body.setVelocity(0, 0);
   }
-
-  turt.targetGraphic.setPosition(turt.target.x, turt.target.y);
 
   turt.ui.forEach((uiPart) => uiPart.updateFn(turt, uiPart.obj));
 };
