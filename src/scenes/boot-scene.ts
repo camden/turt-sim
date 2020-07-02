@@ -75,5 +75,6 @@ export class BootScene extends Phaser.Scene {
     // Source: Open Game Art
     this.load.image('man', 'assets/sprites/character.png');
     this.load.image('turt', 'assets/sprites/turt.png');
+    this.load.image('food', 'assets/sprites/food.png');
   }
 }

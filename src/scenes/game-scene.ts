@@ -1,6 +1,7 @@
 import { Input } from 'phaser';
 import { getGameWidth, getGameHeight } from '../helpers';
 import { Turtle, createTurtle, updateTurtle } from '../things/things';
+import { Food, createFood } from '../things/food';
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
   active: false,
@@ -15,6 +16,8 @@ export class GameScene extends Phaser.Scene {
   private playerSprite: Phaser.Physics.Arcade.Sprite;
 
   private turtles: Turtle[];
+  private foods: Food[];
+  private turtGroup: Phaser.Physics.Arcade.Group;
 
   constructor() {
     super(sceneConfig);
@@ -27,15 +30,32 @@ export class GameScene extends Phaser.Scene {
     // This is a nice helper Phaser provides to create listeners for some of the most common keys.
     this.cursorKeys = this.input.keyboard.createCursorKeys();
 
-    this.turtles = [createTurtle(this), createTurtle(this), createTurtle(this), createTurtle(this)];
+    this.foods = [createFood(this)];
 
-    const turtGroup = this.physics.add.group(this.turtles.map((turtle) => turtle.sprite));
-    this.physics.add.collider(turtGroup, turtGroup);
-    this.physics.add.collider(turtGroup, this.playerSprite);
+    this.turtles = [createTurtle(this), createTurtle(this), createTurtle(this), createTurtle(this)];
+    this.turtGroup = this.physics.add.group(this.turtles.map((turtle) => turtle.sprite));
+    this.physics.add.collider(this.turtGroup, this.turtGroup);
+    this.physics.add.collider(this.turtGroup, this.playerSprite);
   }
 
   public update(): void {
-    this.turtles.forEach((turt) => updateTurtle(turt, this, this.playerSprite));
+    this.turtles.forEach((turt) => updateTurtle(turt, this, this.playerSprite, this.foods));
+
+    this.physics.collide(
+      this.turtGroup,
+      this.foods.map((f) => f.sprite),
+      (food, turt) => {
+        this.foods = this.foods.filter((f) => f.name !== food.name);
+        food.destroy();
+
+        this.foods.push(createFood(this));
+
+        const turtle = this.turtles.find((t) => t.name === turt.name);
+        if (turtle) {
+          // turtle.phase = 'IDLE';
+        }
+      },
+    );
 
     // OLD CODE
     // V V V V V
