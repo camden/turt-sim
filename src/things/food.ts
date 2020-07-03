@@ -1,9 +1,9 @@
-import { Thing } from './things';
+import { Thing, Transformable } from './things';
 import { v1 as uuidv1 } from 'uuid';
 
 export interface Food extends Thing {
   name: string;
-  sprite: Phaser.GameObjects.Image;
+  sprite: Phaser.GameObjects.GameObject & Transformable;
 }
 
 export const createFood = (scene: Phaser.Scene): Food => {

@@ -1,7 +1,8 @@
 import { Input } from 'phaser';
 import { getGameWidth, getGameHeight } from '../helpers';
-import { Turtle, createTurtle, updateTurtle } from '../things/things';
+import { Turtle, createTurtle, updateTurtle, onTurtleEatFood } from '../things/things';
 import { Food, createFood } from '../things/food';
+import * as R from 'ramda';
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
   active: false,
@@ -33,17 +34,25 @@ export class GameScene extends Phaser.Scene {
     // This is a nice helper Phaser provides to create listeners for some of the most common keys.
     this.cursorKeys = this.input.keyboard.createCursorKeys();
 
-    this.foods = [createFood(this)];
+    this.foods = R.times(() => createFood(this), 5);
 
-    // this.turtles = [createTurtle(this), createTurtle(this), createTurtle(this), createTurtle(this)];
-    this.turtles = [createTurtle(this)];
+    this.turtles = R.times(() => createTurtle(this), 5);
+
     this.turtGroup = this.physics.add.group(this.turtles.map((turtle) => turtle.sprite));
     this.physics.add.collider(this.turtGroup, this.turtGroup);
     this.physics.add.collider(this.turtGroup, this.playerSprite);
   }
 
   public update(): void {
-    this.turtles.forEach((turt) => updateTurtle(turt, this, this.playerSprite, this.foods));
+    this.turtles.forEach((turt) =>
+      updateTurtle(
+        turt,
+        this,
+        this.playerSprite,
+        this.foods,
+        this.turtles.filter((t) => t.name !== turt.name),
+      ),
+    );
 
     this.physics.collide(
       this.playerSprite,
@@ -66,7 +75,7 @@ export class GameScene extends Phaser.Scene {
 
         const turtle = this.turtles.find((t) => t.name === turt.name);
         if (turtle) {
-          // turtle.phase = 'IDLE';
+          onTurtleEatFood(this, turtle);
         }
       },
     );

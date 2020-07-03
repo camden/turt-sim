@@ -9,8 +9,9 @@ export interface Turtle extends Thing {
   speed: number;
   maxSpeed: number;
   target: TurtleTarget | null;
-  phase: 'IDLE' | 'HUNTING';
+  phase: 'RESTING' | 'HUNTING';
   targetGraphic: Transformable & Visible;
+  size: number;
   ui: TurtleLocalUIPart[];
 }
 
@@ -19,8 +20,8 @@ interface LocalUIPart<BaseType, ObjectType> {
   updateFn: (BaseType, ObjectType) => void;
 }
 
-type Transformable = Phaser.GameObjects.Components.Transform;
-type Visible = Phaser.GameObjects.Components.Visible;
+export type Transformable = Phaser.GameObjects.Components.Transform;
+export type Visible = Phaser.GameObjects.Components.Visible;
 type TurtleLocalUIPart = LocalUIPart<Turtle, Transformable>;
 
 type TurtleTarget = Phaser.GameObjects.GameObject & Transformable;
@@ -33,8 +34,8 @@ export const createTurtle = (scene: Phaser.Scene): Turtle => {
   sprite.setBounce(0.2, 0.2);
   sprite.setCollideWorldBounds(true);
   sprite.setName(name);
-  const speed = 70;
-  const maxSpeed = 70;
+  const speed = 170;
+  const maxSpeed = 170;
   sprite.setDamping(true);
   sprite.setDrag(0.95);
 
@@ -44,20 +45,37 @@ export const createTurtle = (scene: Phaser.Scene): Turtle => {
   targetGraphic.setFillStyle();
 
   const ui: TurtleLocalUIPart[] = [];
-  const textStatus = scene.add.text(0, 0, 'DEBUG_PHASE');
-  textStatus.setBackgroundColor('white');
-  textStatus.setColor('black');
-  textStatus.setFontSize(12);
+  const textPhase = scene.add.text(0, 0, 'DEBUG_PHASE');
+  textPhase.setBackgroundColor('white');
+  textPhase.setColor('black');
+  textPhase.setFontSize(12);
 
   const phaseIndicator: TurtleLocalUIPart = {
-    obj: textStatus,
+    obj: textPhase,
     updateFn: (turtle: Turtle, text: Phaser.GameObjects.Text) => {
       text.setPosition(turtle.sprite.x, turtle.sprite.y);
       text.setText(turtle.phase);
       return;
     },
   };
+
   ui.push(phaseIndicator);
+
+  const textSize = scene.add.text(0, 0, 'DEBUG_SIZE');
+  textSize.setBackgroundColor('white');
+  textSize.setColor('black');
+  textSize.setFontSize(12);
+
+  const sizeUI: TurtleLocalUIPart = {
+    obj: textSize,
+    updateFn: (turtle: Turtle, text: Phaser.GameObjects.Text) => {
+      text.setPosition(turtle.sprite.x, turtle.sprite.y + 20);
+      text.setText(`Size: ${turtle.size}`);
+      return;
+    },
+  };
+
+  ui.push(sizeUI);
 
   return {
     name,
@@ -67,6 +85,7 @@ export const createTurtle = (scene: Phaser.Scene): Turtle => {
     speed,
     maxSpeed,
     phase: 'HUNTING',
+    size: 1,
     ui,
   };
 };
@@ -76,10 +95,19 @@ export const updateTurtle = (
   scene: Phaser.Scene,
   playerSprite: Phaser.Physics.Arcade.Sprite,
   foods: Food[],
+  otherTurtles: Turtle[],
 ): void => {
   const body = turt.sprite.body as Phaser.Physics.Arcade.Body;
 
-  turt.target = foods[0] ? foods[0].sprite : null;
+  turt.sprite.setScale(turt.size * 0.25);
+  turt.speed = Math.max(10, 170 - turt.size * 5);
+
+  const closestFood = scene.physics.closest(
+    turt.sprite,
+    foods.map((f) => f.sprite),
+  ) as Transformable & Phaser.GameObjects.GameObject;
+
+  turt.target = closestFood;
 
   if (turt.phase === 'HUNTING' && !!turt.target) {
     turt.targetGraphic.setVisible(true);
@@ -93,4 +121,16 @@ export const updateTurtle = (
   }
 
   turt.ui.forEach((uiPart) => uiPart.updateFn(turt, uiPart.obj));
+};
+
+export const onTurtleEatFood = (scene: Phaser.Scene, turt: Turtle): void => {
+  turt.phase = 'RESTING';
+  turt.size++;
+
+  scene.time.addEvent({
+    delay: Phaser.Math.Between(1000, 3000),
+    callback: () => {
+      turt.phase = 'HUNTING';
+    },
+  });
 };
